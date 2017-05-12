@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
 
 public class Bank {
 	private static final int NUM_ACCOUNTS = 20;
@@ -30,21 +29,28 @@ public class Bank {
 		this.latch = new CountDownLatch(threads);
 
 		setupAccounts();
-
-		for (int i = 0; i < threads; i++) {
-			new Worker().start();
-		}
-
+		startThreads();
 		readFile();
-
-		for (Account account : accounts) {
-			System.out.println(account);
-		}
-
+		try {
+			latch.await();
+		} catch (InterruptedException ignored) {}
+		printResults();
 	}
 
 	public static void main(String[] args) {
 		new Bank(Integer.parseInt(args[1]), args[0]);
+	}
+
+	private void printResults() {
+		for (Account account : accounts) {
+			System.out.println(account);
+		}
+	}
+
+	private void startThreads() {
+		for (int i = 0; i < threads; i++) {
+			new Worker().start();
+		}
 	}
 
 	private void readFile() {
@@ -62,8 +68,7 @@ public class Bank {
 			}
 
 			reader.close();
-		} catch (Exception e) {
-			e.printStackTrace();
+		} catch (Exception ignored) {
 		}
 	}
 
@@ -90,10 +95,9 @@ public class Bank {
 			while (true) {
 				try {
 					Transaction transaction = transactions.take();
-					if (transaction == nullTrans) break;
+					if (transaction.equals(nullTrans)) break; // could be compared with == as well
 					makeTransaction(transaction);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
+				} catch (InterruptedException ignored) {
 				}
 			}
 			latch.countDown();

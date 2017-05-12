@@ -27,4 +27,10 @@ public class Transaction {
 	public String toString() {
 		return sender + " " + receiver + " " + amount;
 	}
+
+	@Override
+	public boolean equals(Object obj) {
+		Transaction that = (Transaction) obj;
+		return that.getAmount() == this.getAmount() && that.getReceiver() == this.getReceiver() && that.getSender() == this.getSender();
+	}
 }
