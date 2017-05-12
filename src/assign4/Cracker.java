@@ -12,25 +12,23 @@ public class Cracker {
 	private final int length;
 	private final int threads;
 	private CountDownLatch latch;
-	private String result;
 
 	private Cracker(String code, int length, int threads) {
 		this.length = length;
 		this.threads = threads;
-		this.latch = new CountDownLatch(1); // There's only one correct answer.
+		this.latch = new CountDownLatch(threads); // There's only one correct answer.
 		this.bytes = hexToArray(code);
 
+		long start = System.currentTimeMillis();
 		runThreads();
 
 		try {
 			latch.await();
-			// Might be a good idea to interrupt all the other threads
-			// if we're at this point. But doesn't really speed up the
-			// program, so I'll leave this how it is.
 		} catch (InterruptedException ignored) {
 		}
 
-		System.out.println(result);
+		long end = System.currentTimeMillis();
+		System.out.println("Elapsed: " + (end - start) + "ms");
 	}
 
 	/*
@@ -71,16 +69,12 @@ public class Cracker {
 			return;
 		}
 
-		long start = System.currentTimeMillis();
 		new Cracker(args[0], Integer.parseInt(args[1]), Integer.parseInt(args[2]));
-		long end = System.currentTimeMillis();
-
-		// Print out elapsed time.
-		System.out.println("Elapsed:" + (end - start) + "ms");
 	}
 
 	/**
 	 * Encodes given string with SHA algorithm.
+	 *
 	 * @param input string
 	 * @return encoded byte[]
 	 */
@@ -111,8 +105,6 @@ public class Cracker {
 
 		@Override
 		public void run() {
-			// System.out.println("starting thread #" + index);
-
 			// Calculate start and end index in CHARS array.
 			int start = (CHARS.length / threads) * this.index;
 			int end = start + CHARS.length / threads;
@@ -123,22 +115,22 @@ public class Cracker {
 				soFar[0] = CHARS[i];
 				crack(soFar, 1);
 			}
+			latch.countDown();
 		}
 
 		/**
 		 * Recursively generates every possible string.
+		 *
 		 * @param soFar char[] with starting symbol
 		 * @param index current position
 		 */
 		private void crack(char[] soFar, int index) {
-			if (index == soFar.length) {
-				// If the recursion is here that means that full string
-				// is already generated. We have to check its validity.
-				String word = new String(soFar);
-				if (Arrays.equals(bytes, encode(word))) {
-					latch.countDown(); // Let the main thread know we're done here.
-					result = word;
-				}
+			String word = new String(soFar);
+			if (Arrays.equals(bytes, encode(word))) {
+				System.out.println(word);
+			}
+
+			if (index >= length) {
 				return;
 			}
 
