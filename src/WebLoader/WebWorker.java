@@ -1,4 +1,4 @@
-package assign4;
+package WebLoader;
 
 import java.io.*;
 import java.net.*;
@@ -14,16 +14,16 @@ public class WebWorker extends Thread {
 		try {
 			URL url = new URL(urlString);
 			URLConnection connection = url.openConnection();
-		
+
 			// Set connect() to throw an IOException
 			// if connection does not succeed in this many msecs.
 			connection.setConnectTimeout(5000);
-			
+
 			connection.connect();
 			input = connection.getInputStream();
 
 			BufferedReader reader  = new BufferedReader(new InputStreamReader(input));
-		
+
 			char[] array = new char[1000];
 			int len;
 			contents = new StringBuilder(1000);
@@ -31,9 +31,9 @@ public class WebWorker extends Thread {
 				contents.append(array, 0, len);
 				Thread.sleep(100);
 			}
-			
+
 			// Successful download if we get here
-			
+
 		}
 		// Otherwise control jumps to a catch...
 		catch(MalformedURLException ignored) {}
@@ -52,5 +52,5 @@ public class WebWorker extends Thread {
 		}
 
 */
-	
+
 }
