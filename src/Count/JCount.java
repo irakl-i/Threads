@@ -40,7 +40,7 @@ public class JCount extends JPanel {
 		stop.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				if(worker != null) {
+				if (worker != null) {
 					worker.interrupt();
 				}
 			}
@@ -84,14 +84,14 @@ public class JCount extends JPanel {
 		@Override
 		public void run() {
 			for (int i = 0; i <= value; i++) {
-				if(i % 10000 == 0) {
+				if (i % 10000 == 0) {
 					try {
 						sleep(100);
 					} catch (InterruptedException e) {
 						return;
 					}
 
-					final String value = i + "";
+					final String value = Integer.toString(i);
 					SwingUtilities.invokeLater(new Runnable() {
 						@Override
 						public void run() {
