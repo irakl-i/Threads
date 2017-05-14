@@ -16,7 +16,7 @@ public class Cracker {
 	private Cracker(String code, int length, int threads) {
 		this.length = length;
 		this.threads = threads;
-		this.latch = new CountDownLatch(threads); // There's only one correct answer.
+		this.latch = new CountDownLatch(threads);
 		this.bytes = hexToArray(code);
 
 		long start = System.currentTimeMillis();

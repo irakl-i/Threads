@@ -1,18 +1,47 @@
 package WebLoader;
 
-import java.io.*;
-import java.net.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import javax.swing.*;
+import java.util.concurrent.Semaphore;
 
 public class WebWorker extends Thread {
-/*
-  This is the core web/download i/o code...
- 		InputStream input = null;
+	private String url;
+	private int row;
+	private WebFrame frame;
+	private String status;
+	private Semaphore semaphore;
+
+	public WebWorker(String url, int row, WebFrame frame, Semaphore semaphore) {
+		this.url = url;
+		this.row = row;
+		this.frame = frame;
+		this.semaphore = semaphore;
+	}
+
+	@Override
+	public void run() {
+		try {
+			semaphore.acquire();
+		} catch (InterruptedException ignored) {
+		}
+		download();
+		frame.update(status);
+	}
+
+	private void download() {
+		InputStream input = null;
 		StringBuilder contents = null;
 		try {
-			URL url = new URL(urlString);
+			long start = System.currentTimeMillis();
+
+			URL url = new URL(this.url);
 			URLConnection connection = url.openConnection();
 
 			// Set connect() to throw an IOException
@@ -22,7 +51,7 @@ public class WebWorker extends Thread {
 			connection.connect();
 			input = connection.getInputStream();
 
-			BufferedReader reader  = new BufferedReader(new InputStreamReader(input));
+			BufferedReader reader = new BufferedReader(new InputStreamReader(input));
 
 			char[] array = new char[1000];
 			int len;
@@ -32,25 +61,24 @@ public class WebWorker extends Thread {
 				Thread.sleep(100);
 			}
 
-			// Successful download if we get here
-
+			long end = System.currentTimeMillis();
+			SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
+			status = dateFormat.format(new Date()) + " " + (end - start) + "ms " + contents.length() + " bytes";
 		}
 		// Otherwise control jumps to a catch...
-		catch(MalformedURLException ignored) {}
-		catch(InterruptedException exception) {
-			// YOUR CODE HERE
-			// deal with interruption
+		catch (IOException ignored) {
+			status = "err";
+		} catch (InterruptedException exception) {
+			status = "interrupted";
 		}
-		catch(IOException ignored) {}
 		// "finally" clause, to close the input stream
 		// in any case
 		finally {
-			try{
+			try {
 				if (input != null) input.close();
+			} catch (IOException ignored) {
 			}
-			catch(IOException ignored) {}
 		}
-
-*/
+	}
 
 }
