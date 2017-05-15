@@ -3,10 +3,10 @@ package WebLoader;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Semaphore;
 
 
@@ -28,7 +28,10 @@ public class WebFrame extends JFrame {
 	private JProgressBar progressBar;
 	private boolean running;
 	private int runningThreads;
+	private int completed;
 	private Semaphore semaphore;
+	private List<WebWorker> workers;
+	private long start;
 
 	public WebFrame(String title, String fileName) {
 		super(title);
@@ -38,6 +41,8 @@ public class WebFrame extends JFrame {
 		} catch (Exception ignored) {
 		}
 
+		this.completed = 0;
+		this.workers = new ArrayList<>();
 		this.runningThreads = 0;
 		this.running = false;
 		this.fileName = fileName;
@@ -58,9 +63,9 @@ public class WebFrame extends JFrame {
 		stopButton = new JButton("Stop");
 		textField = new JTextField();
 		textField.setMaximumSize(new Dimension(50, 10));
-		runningLabel = new JLabel("Running: 0");
-		completedLabel = new JLabel("Completed: 0");
-		elapsedLabel = new JLabel("Elapsed: 0.0");
+		runningLabel = new JLabel("Running: ");
+		completedLabel = new JLabel("Completed: ");
+		elapsedLabel = new JLabel("Elapsed: ");
 		progressBar = new JProgressBar(0, table.getRowCount());
 
 		panel.add(singleButton);
@@ -71,15 +76,11 @@ public class WebFrame extends JFrame {
 		panel.add(elapsedLabel);
 		panel.add(progressBar);
 		panel.add(stopButton);
+		add(panel);
 
 		loadFile();
 		addListeners();
 
-		//WebWorker worker = new WebWorker("http://freeuni.edu.ge/", 1, this);
-		//worker.start();
-
-
-		add(panel);
 		setPreferredSize(new Dimension(WINDOW_WIDTH, WINDOW_HEIGHT));
 		setLocationByPlatform(true);
 		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -88,7 +89,8 @@ public class WebFrame extends JFrame {
 	}
 
 	public static void main(String[] args) {
-		new WebFrame("WebLoader", "files/links.txt");
+		SwingUtilities.invokeLater(() -> new WebFrame("WebLoader", "files/links.txt"));
+
 	}
 
 	private void addListeners() {
@@ -113,18 +115,33 @@ public class WebFrame extends JFrame {
 	}
 
 	private void startThreads() {
-		new Thread(() -> {
-			int count = semaphore.availablePermits();
+		Thread th = new Thread(() -> {
+			int count = model.getRowCount();
 			for (int i = 0; i < count; i++) {
-				WebWorker worker = new WebWorker((String) model.getValueAt(i, 0), i, WebFrame.this, semaphore);
+				workers.add(new WebWorker((String) model.getValueAt(i, 0), i, WebFrame.this));
+			}
+
+			for (WebWorker worker : workers) {
+				try {
+					semaphore.acquire();
+				} catch (InterruptedException ignored) {
+				}
 				worker.start();
 				runningThreads++;
+				SwingUtilities.invokeLater(() -> runningLabel.setText("Running: " + runningThreads));
 			}
 		});
+		start = System.currentTimeMillis();
+		th.start();
 	}
 
-	public void update(String status) {
-		model.setValueAt(status, 0, 1);
+	public void update(String status, int row) {
+		semaphore.release();
+		model.setValueAt(status, row, 1);
+		completedLabel.setText("Completed: " + ++completed);
+		runningLabel.setText("Running: " + --runningThreads);
+		progressBar.setValue(completed);
+		elapsedLabel.setText("Elapsed: " + (System.currentTimeMillis() - start) + "ms");
 	}
 
 	private void loadFile() {

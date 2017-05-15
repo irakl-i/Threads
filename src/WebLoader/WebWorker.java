@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.text.SimpleDateFormat;
@@ -16,23 +15,18 @@ public class WebWorker extends Thread {
 	private int row;
 	private WebFrame frame;
 	private String status;
-	private Semaphore semaphore;
 
-	public WebWorker(String url, int row, WebFrame frame, Semaphore semaphore) {
+	public WebWorker(String url, int row, WebFrame frame) {
 		this.url = url;
 		this.row = row;
 		this.frame = frame;
-		this.semaphore = semaphore;
 	}
 
 	@Override
 	public void run() {
-		try {
-			semaphore.acquire();
-		} catch (InterruptedException ignored) {
-		}
 		download();
-		frame.update(status);
+		System.out.println(Thread.currentThread().getId());
+		frame.update(status, row);
 	}
 
 	private void download() {
