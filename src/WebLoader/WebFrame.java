@@ -40,6 +40,11 @@ public class WebFrame extends JFrame {
 	private List<WebWorker> workers;
 	private Thread launcher;
 
+	/**
+	 * Constructor
+	 * @param title of window
+	 * @param fileName
+	 */
 	public WebFrame(String title, String fileName) {
 		super(title);
 
@@ -79,6 +84,9 @@ public class WebFrame extends JFrame {
 		SwingUtilities.invokeLater(() -> new WebFrame("WebLoader", "files/links.txt"));
 	}
 
+	/**
+	 * Adds text field and progress bar to the panel.
+	 */
 	private void addMisc() {
 		textField = new JTextField();
 		textField.setMaximumSize(new Dimension(50, 10));
@@ -92,6 +100,9 @@ public class WebFrame extends JFrame {
 		panel.add(stopButton);
 	}
 
+	/**
+	 * Adds labels to the panel.
+	 */
 	private void addLabels() {
 		runningLabel = new JLabel("Running: ");
 		completedLabel = new JLabel("Completed: ");
@@ -102,6 +113,9 @@ public class WebFrame extends JFrame {
 		panel.add(elapsedLabel);
 	}
 
+	/**
+	 * Adds buttons to the panel.
+	 */
 	private void addButtons() {
 		singleButton = new JButton("Single Thread Fetch");
 		concurrentButton = new JButton("Concurrent Fetch");
@@ -111,6 +125,9 @@ public class WebFrame extends JFrame {
 		panel.add(concurrentButton);
 	}
 
+	/**
+	 * Adds table to the window.
+	 */
 	private void addTable() {
 		model = new DefaultTableModel(new String[]{"url", "status"}, 0);
 		table = new JTable(model);
@@ -124,7 +141,11 @@ public class WebFrame extends JFrame {
 		panel.add(scrollPane);
 	}
 
+	/**
+	 * Adds button listeners.
+	 */
 	private void addListeners() {
+		// Single thread button.
 		singleButton.addActionListener(e -> {
 			if (running) return;
 			reset();
@@ -132,6 +153,7 @@ public class WebFrame extends JFrame {
 			start(1);
 		});
 
+		// Concurrent threads button.
 		concurrentButton.addActionListener(e -> {
 			if (running) return;
 			int count = Integer.parseInt(textField.getText());
@@ -140,6 +162,7 @@ public class WebFrame extends JFrame {
 			start(count);
 		});
 
+		// Stop button.
 		stopButton.addActionListener(e -> {
 			if (launcher != null) launcher.interrupt();
 			for (WebWorker worker : workers) {
@@ -148,6 +171,10 @@ public class WebFrame extends JFrame {
 		});
 	}
 
+	/**
+	 * Prepares the GUI and launches threads.
+	 * @param count number of threads
+	 */
 	private void start(final int count) {
 		// Launch the threads.
 		launchThreads(count);
@@ -162,6 +189,10 @@ public class WebFrame extends JFrame {
 		progressBar.setMaximum(model.getRowCount());
 	}
 
+	/**
+	 * Launches threads from a new thread, and marks the start time.
+	 * @param count number of threads
+	 */
 	private void launchThreads(final int count) {
 		launcher = new Thread(() -> {
 			semaphore = new Semaphore(count);
@@ -195,6 +226,11 @@ public class WebFrame extends JFrame {
 		launcher.start();
 	}
 
+	/**
+	 * Updates the table's 1st column with status.
+	 * @param status data
+	 * @param row
+	 */
 	public void update(String status, int row) {
 		// Release the semaphore, because we know that if we're at this
 		// point that means one of the threads is done working.
@@ -216,12 +252,18 @@ public class WebFrame extends JFrame {
 		}
 	}
 
+	/**
+	 * Toggles the buttons.
+	 */
 	private void toggleButtons() {
 		singleButton.setEnabled(!singleButton.isEnabled());
 		concurrentButton.setEnabled(!concurrentButton.isEnabled());
 		stopButton.setEnabled(!stopButton.isEnabled());
 	}
 
+	/**
+	 * Resets the GUI.
+	 */
 	private void reset() {
 		toggleButtons();
 		progressBar.setValue(0);
@@ -233,6 +275,9 @@ public class WebFrame extends JFrame {
 		workers.clear();
 	}
 
+	/**
+	 * Removes old entries from the 1st row of the table.
+	 */
 	private void clearTable() {
 		elapsedLabel.setText("Elapsed: ");
 		for (int i = 0; i < model.getRowCount(); i++) {
@@ -241,6 +286,9 @@ public class WebFrame extends JFrame {
 		}
 	}
 
+	/**
+	 * Loads and reads file line-by-line.
+	 */
 	private void loadFile() {
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(fileName));

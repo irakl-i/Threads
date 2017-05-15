@@ -41,18 +41,27 @@ public class Bank {
 		new Bank(Integer.parseInt(args[1]), args[0]);
 	}
 
+	/**
+	 * Prints the results.
+	 */
 	private void printResults() {
 		for (Account account : accounts) {
 			System.out.println(account);
 		}
 	}
 
+	/**
+	 * Starts threads.
+	 */
 	private void startThreads() {
 		for (int i = 0; i < threads; i++) {
 			new Worker().start();
 		}
 	}
 
+	/**
+	 * Loads and reads from file line-by-line.
+	 */
 	private void readFile() {
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(fileName));
@@ -72,6 +81,11 @@ public class Bank {
 		}
 	}
 
+	/**
+	 * Parses values from string
+	 * @param line
+	 * @return array of ints
+	 */
 	private int[] parseValues(String line) {
 		String[] parts = line.split(" ");
 		int[] values = new int[parts.length];
@@ -83,6 +97,9 @@ public class Bank {
 		return values;
 	}
 
+	/**
+	 * Sets up accounts.
+	 */
 	private void setupAccounts() {
 		for (int i = 0; i < NUM_ACCOUNTS; i++) {
 			accounts.add(new Account(i, STARTING_BALANCE));
@@ -103,6 +120,10 @@ public class Bank {
 			latch.countDown();
 		}
 
+		/**
+		 * Makes the transaction between two accounts.
+		 * @param transaction
+		 */
 		private void makeTransaction(Transaction transaction) {
 			Account sender = accounts.get(transaction.getSender());
 			Account receiver = accounts.get(transaction.getReceiver());

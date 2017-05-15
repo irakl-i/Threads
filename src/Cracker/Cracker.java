@@ -1,4 +1,4 @@
-package assign4;
+package Cracker;
 
 import java.security.MessageDigest;
 import java.util.Arrays;
@@ -19,9 +19,11 @@ public class Cracker {
 		this.latch = new CountDownLatch(threads);
 		this.bytes = hexToArray(code);
 
+		// Mark the start time.
 		long start = System.currentTimeMillis();
 		runThreads();
 
+		// Wait for every thread to finish.
 		try {
 			latch.await();
 		} catch (InterruptedException ignored) {

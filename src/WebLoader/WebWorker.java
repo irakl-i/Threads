@@ -15,6 +15,12 @@ public class WebWorker extends Thread {
 	private WebFrame frame;
 	private String status;
 
+	/**
+	 * Constructor.
+	 * @param url
+	 * @param row
+	 * @param frame
+	 */
 	public WebWorker(String url, int row, WebFrame frame) {
 		this.url = url;
 		this.row = row;
@@ -27,6 +33,9 @@ public class WebWorker extends Thread {
 		frame.update(status, row);
 	}
 
+	/**
+	 * Downloads websites from the internet and calls updates on the frame.
+	 */
 	private void download() {
 		InputStream input = null;
 		StringBuilder contents = null;
@@ -58,7 +67,7 @@ public class WebWorker extends Thread {
 			status = dateFormat.format(new Date()) + " " + (end - start) + "ms " + contents.length() + " bytes";
 		}
 		// Otherwise control jumps to a catch...
-		catch (IOException ignored) {
+		catch (IOException exception) {
 			status = "err";
 		} catch (InterruptedException exception) {
 			status = "interrupted";
