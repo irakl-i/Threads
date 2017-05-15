@@ -8,7 +8,6 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.concurrent.Semaphore;
 
 public class WebWorker extends Thread {
 	private String url;
@@ -25,7 +24,6 @@ public class WebWorker extends Thread {
 	@Override
 	public void run() {
 		download();
-		System.out.println(Thread.currentThread().getId());
 		frame.update(status, row);
 	}
 
