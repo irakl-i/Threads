@@ -17,32 +17,35 @@ public class WebFrame extends JFrame {
 	private DefaultTableModel model;
 	private JTable table;
 	private JPanel panel;
-	private JButton singleButton;
 
+	private JButton singleThreadButton;
 	private JButton concurrentButton;
 	private JButton stopButton;
+
 	private JLabel runningLabel;
-
 	private JLabel completedLabel;
-
 	private JLabel elapsedLabel;
+
 	private JProgressBar progressBar;
 
 	private JTextField textField;
-	private boolean running;
 
 	private String fileName;
+	private boolean running;
 	private int runningThreads;
-	private int completed;
+	private int completedThreads;
 	private long start;
 
-	private Semaphore semaphore;
+	private Semaphore workerLock;
+	private Semaphore launcherLock;
 	private List<WebWorker> workers;
 	private Thread launcher;
 
+
 	/**
 	 * Constructor
-	 * @param title of window
+	 *
+	 * @param title    of window
 	 * @param fileName
 	 */
 	public WebFrame(String title, String fileName) {
@@ -55,11 +58,12 @@ public class WebFrame extends JFrame {
 		}
 
 		// Initialize instance variables.
-		this.completed = 0;
+		this.completedThreads = 0;
 		this.workers = new ArrayList<>();
 		this.runningThreads = 0; // Not counting the main and the swing thread, although we could.
 		this.running = false; // Threads are not running yet.
 		this.fileName = fileName;
+		this.launcherLock = new Semaphore(1);
 
 		// Add graphics elements.
 		addTable();
@@ -81,7 +85,7 @@ public class WebFrame extends JFrame {
 	}
 
 	public static void main(String[] args) {
-		SwingUtilities.invokeLater(() -> new WebFrame("WebLoader", "files/links.txt"));
+		SwingUtilities.invokeLater(() -> new WebFrame("WebLoader", "files/links2.txt"));
 	}
 
 	/**
@@ -117,11 +121,11 @@ public class WebFrame extends JFrame {
 	 * Adds buttons to the panel.
 	 */
 	private void addButtons() {
-		singleButton = new JButton("Single Thread Fetch");
+		singleThreadButton = new JButton("Single Thread Fetch");
 		concurrentButton = new JButton("Concurrent Fetch");
 		stopButton = new JButton("Stop");
 
-		panel.add(singleButton);
+		panel.add(singleThreadButton);
 		panel.add(concurrentButton);
 	}
 
@@ -146,7 +150,7 @@ public class WebFrame extends JFrame {
 	 */
 	private void addListeners() {
 		// Single thread button.
-		singleButton.addActionListener(e -> {
+		singleThreadButton.addActionListener(e -> {
 			if (running) return;
 			reset();
 			clearTable();
@@ -164,15 +168,23 @@ public class WebFrame extends JFrame {
 
 		// Stop button.
 		stopButton.addActionListener(e -> {
-			if (launcher != null) launcher.interrupt();
-			for (WebWorker worker : workers) {
-				worker.interrupt();
-			}
+			new Thread(() -> {
+				try {
+					launcherLock.acquire();
+				} catch (InterruptedException ignored) {
+				}
+				if (launcher != null) launcher.interrupt();
+				for (WebWorker worker : workers) {
+					worker.interrupt();
+				}
+				launcherLock.release();
+			}).start();
 		});
 	}
 
 	/**
 	 * Prepares the GUI and launches threads.
+	 *
 	 * @param count number of threads
 	 */
 	private void start(final int count) {
@@ -182,7 +194,7 @@ public class WebFrame extends JFrame {
 		// Update graphics and instance variables.
 		running = true;
 
-		singleButton.setEnabled(false);
+		singleThreadButton.setEnabled(false);
 		concurrentButton.setEnabled(false);
 		stopButton.setEnabled(true);
 
@@ -191,11 +203,16 @@ public class WebFrame extends JFrame {
 
 	/**
 	 * Launches threads from a new thread, and marks the start time.
+	 *
 	 * @param count number of threads
 	 */
 	private void launchThreads(final int count) {
 		launcher = new Thread(() -> {
-			semaphore = new Semaphore(count);
+			try {
+				launcherLock.acquire();
+			} catch (InterruptedException ignored) {
+			}
+			workerLock = new Semaphore(count);
 			// Increment running threads, because this thread is running.
 			runningThreads++;
 			// Construct each worker.
@@ -209,7 +226,7 @@ public class WebFrame extends JFrame {
 				if (launcher.isInterrupted()) return;
 				// This limits how many threads can be running concurrently.
 				try {
-					semaphore.acquire();
+					workerLock.acquire();
 				} catch (InterruptedException ignored) {
 				}
 
@@ -221,6 +238,7 @@ public class WebFrame extends JFrame {
 
 			// Decrement running threads if the launcher thread is finished.
 			runningThreads--;
+			launcherLock.release();
 		});
 		start = System.currentTimeMillis(); // Mark the start.
 		launcher.start();
@@ -228,21 +246,22 @@ public class WebFrame extends JFrame {
 
 	/**
 	 * Updates the table's 1st column with status.
+	 *
 	 * @param status data
 	 * @param row
 	 */
 	public void update(String status, int row) {
 		// Release the semaphore, because we know that if we're at this
 		// point that means one of the threads is done working.
-		semaphore.release();
+		workerLock.release();
 
 		// Update the value.
 		model.setValueAt(status, row, 1);
 
 		// Update the labels and progress bar.
-		completedLabel.setText("Completed: " + ++completed);
+		completedLabel.setText("Completed: " + ++completedThreads);
 		runningLabel.setText("Running: " + --runningThreads);
-		progressBar.setValue(completed);
+		progressBar.setValue(completedThreads);
 
 		// Checks if there are no more running threads,
 		// update the elapsed label and resets GUI.
@@ -256,7 +275,7 @@ public class WebFrame extends JFrame {
 	 * Toggles the buttons.
 	 */
 	private void toggleButtons() {
-		singleButton.setEnabled(!singleButton.isEnabled());
+		singleThreadButton.setEnabled(!singleThreadButton.isEnabled());
 		concurrentButton.setEnabled(!concurrentButton.isEnabled());
 		stopButton.setEnabled(!stopButton.isEnabled());
 	}
@@ -268,7 +287,7 @@ public class WebFrame extends JFrame {
 		toggleButtons();
 		progressBar.setValue(0);
 
-		completed = 0;
+		completedThreads = 0;
 		runningThreads = 0;
 		running = false;
 

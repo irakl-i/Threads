@@ -17,6 +17,7 @@ public class WebWorker extends Thread {
 
 	/**
 	 * Constructor.
+	 *
 	 * @param url
 	 * @param row
 	 * @param frame
